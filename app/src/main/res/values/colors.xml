@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="searchviewbacground">#E4E1E1</color>
+    <color name="savecolor">#185484</color>
+    <color name="profilebackground">#566F83</color>
+    <color name="profilemenubackground">#C29EC8</color>
+
 </resources>
