@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Spinner
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -32,7 +33,8 @@ class AppFragment : Fragment(), contactListAdapter.onItemClickListener {
     ): View? {
         // Inflate the layout for this fragment
         var view: View = inflater.inflate(param1, container, false)
-        initRecyclerView(view)
+        exposedRecyclerView = initRecyclerView(view)
+
         return view
     }
 
@@ -45,9 +47,16 @@ class AppFragment : Fragment(), contactListAdapter.onItemClickListener {
                     putInt(ARG_PARAM1, param1)
                 }
             }
+
+        private lateinit var exposedRecyclerView: RecyclerView
+
+        fun getRecyclerView(): RecyclerView {
+
+            return exposedRecyclerView
+        }
     }
 
-    private fun initRecyclerView(view: View) {
+    private fun initRecyclerView(view: View): RecyclerView {
 
         // Layout Manager responsible for laying the views in the RecyclerView
         val mLayoutManager = LinearLayoutManager(
@@ -55,20 +64,24 @@ class AppFragment : Fragment(), contactListAdapter.onItemClickListener {
             LinearLayoutManager.VERTICAL, false
         )
 
-        var contactRecyclerView = view.findViewById<RecyclerView>(R.id.contactrecyclerview)
-        var createContactCardView = view.findViewById<CardView>(R.id.newcontactcardview)
+        val contactRecyclerView = view.findViewById<RecyclerView>(R.id.contactrecyclerview)
+        val createContactCardView = view.findViewById<CardView>(R.id.newcontactcardview)
 
         contactRecyclerView.apply {
             setLayoutManager(mLayoutManager)
-            adapter = contactListAdapter(view.context, ContactsFactory().getContactList(), this@AppFragment)
+
+            adapter = contactListAdapter(view.context, ContactRepository.getContactList(), this@AppFragment)
         }
 
-        createContactCardView.setOnClickListener({
+        createContactCardView.setOnClickListener{
 
-            val contactIntent: Intent = Intent(requireContext(), NewContactActivity::class.java)
+            val contactIntent = Intent(requireContext(), NewContactActivity::class.java)
             contactIntent.putExtra("ACTIVITY_NAME", MainActivity::class.java.name)
             startActivity(contactIntent)
-        })
+        }
+
+
+        return contactRecyclerView
     }
 
     override fun onItemClick(position: Int, userContactList: ArrayList<UserContact>) {
@@ -78,6 +91,7 @@ class AppFragment : Fragment(), contactListAdapter.onItemClickListener {
             putExtra("CONTACTFIRSTNAME", "${userContactList[position].firstName} ")
             putExtra("CONTACTLASTNAME", "${userContactList[position].lastName} ")
             putExtra("CONTACTNUMBER", userContactList[position].phoneNumber)
+            putExtra("CONTACTID", userContactList.get(position).contactId)
         }
         startActivity(contactIntent)
     }

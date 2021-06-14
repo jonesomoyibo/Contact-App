@@ -6,9 +6,11 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.widget.ImageView
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.decagon.android.sq007.R
@@ -30,6 +32,7 @@ class ContactProfileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_contact_profile)
+
         initViewsValues()
         registerViewsListeners()
     }
@@ -45,6 +48,8 @@ class ContactProfileActivity : AppCompatActivity() {
         profilePhoneIcon = findViewById(R.id.profilephone)
         messageIcon = findViewById(R.id.messageid)
         customMessageIcon = findViewById(R.id.messagecustom)
+
+
     }
 
     private fun registerViewsListeners() {
@@ -67,34 +72,32 @@ class ContactProfileActivity : AppCompatActivity() {
 
         backButtonView.apply {
 
-            setOnClickListener({
-                val contactIntent = Intent(this@ContactProfileActivity, MainActivity::class.java)
-                startActivity(contactIntent)
-            })
+            setOnClickListener {
+                // val contactIntent = Intent(this@ContactProfileActivity, MainActivity::class.java)
+                // startActivity(contactIntent)
+                onBackPressed()
+            }
         }
 
         profileEditButton.apply {
 
-            setOnMenuItemClickListener({
+            setOnMenuItemClickListener {
                 when (it.itemId) {
 
                     R.id.edit -> editContact()
 
                     R.id.share -> shareContact()
 
-                    R.id.delete -> deleteContact()
+                    R.id.delete -> deleteContact(UserContact(contactId = intent.getStringExtra("CONTACTID")!!))
                 }
 
                 return@setOnMenuItemClickListener true
-            })
+            }
         }
     }
 
     private fun makeCall() {
         checkForPermissions(Manifest.permission.CALL_PHONE, CALL_ACTION, CALL_REQUEST_CODE)
-    }
-
-    private fun addContact(contact: UserContact) {
     }
 
     private fun sendIntentToExternalActivity(actionType: String) {
@@ -103,8 +106,9 @@ class ContactProfileActivity : AppCompatActivity() {
             actionIntent = Intent(Intent.ACTION_CALL)
             actionIntent.data = Uri.parse("tel:${profileNumberView.text}")
         } else {
-            actionIntent = Intent(Intent.ACTION_SEND)
-            actionIntent.data = Uri.parse("tel:${profileNumberView.text}")
+            val uriSms = Uri.parse("smsto:08089388420")
+            actionIntent = Intent(Intent.ACTION_SENDTO, uriSms)
+            actionIntent.putExtra("sms_body", "The SMS text")
         }
         startActivity(actionIntent)
     }
@@ -127,10 +131,14 @@ class ContactProfileActivity : AppCompatActivity() {
     private fun sendMessage() {
         checkForPermissions(Manifest.permission.SEND_SMS, MESSAGE_ACTION, MESSAGE_REQUEST_CODE)
     }
-    private fun deleteContact() {
-    }
 
-    private fun readPhoneContacts() {
+    private fun deleteContact(contact: UserContact) {
+        FireBaseManager.deleteContact(contact)
+        // val contactIntent = Intent(this@ContactProfileActivity, MainActivity::class.java)
+
+        // startActivity(contactIntent)
+        Toast.makeText(this, "Contact has been deleted successfully", Toast.LENGTH_SHORT)
+        onBackPressed()
     }
 
     private fun checkForPermissions(permissionType: String, actionType: String, requestCode: Int) {
@@ -191,6 +199,16 @@ class ContactProfileActivity : AppCompatActivity() {
         contactIntent.putExtra("CONTACTFIRSTNAME", intent.getStringExtra("CONTACTFIRSTNAME"))
         contactIntent.putExtra("CONTACTNUMBER", intent.getStringExtra("CONTACTNUMBER"))
         contactIntent.putExtra("CONTACTLASTNAME", intent.getStringExtra("CONTACTLASTNAME"))
-        startActivity(contactIntent)
+        contactIntent.putExtra("CONTACTID", intent.getStringExtra("CONTACTID"))
+        startActivityForResult(contactIntent, 1, null)
+        finish()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1 && resultCode == RESULT_OK) {
+            profileNumberView.text = data?.getStringExtra("CONTACTNUMBER")
+            profileName.text = "${data?.getStringExtra("CONTACTFIRSTNAME")} ${data?.getStringExtra("CONTACTLASTNAME")}"
+        }
     }
 }

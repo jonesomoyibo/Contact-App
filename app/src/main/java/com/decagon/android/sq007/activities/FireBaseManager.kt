@@ -1,29 +1,22 @@
 package com.decagon.android.sq007.activities
 
-import androidx.lifecycle.LiveData
+import android.content.ContentValues.TAG
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.*
+import java.util.*
 
 const val CONTACT_DATABASE = "contacts"
-class FireBaseManager() {
 
-    private var mutableLiveData: MutableLiveData<Exception?>
-    private lateinit var liveData: LiveData<Exception?>
-    private var dbContacts: DatabaseReference
-    private val contactList: MutableLiveData<UserContact>
-    private val contact: LiveData<UserContact>
+object FireBaseManager {
 
-    init {
-        dbContacts = FirebaseDatabase.getInstance().getReference(CONTACT_DATABASE)
-        mutableLiveData = MutableLiveData<Exception?>()
-        liveData = mutableLiveData
-        contactList = MutableLiveData<UserContact>()
-        contact = contactList
-    }
+    private val mutableLiveData = MutableLiveData<Exception?>()
+    private val dbContacts: DatabaseReference = FirebaseDatabase.getInstance().getReference(CONTACT_DATABASE)
 
     fun addContact(contact: UserContact) {
-        contact.contactId = dbContacts.push().key
+        contact.contactId = dbContacts.push().key!!
         dbContacts.child(contact.contactId!!).setValue(contact).addOnCompleteListener {
             if (it.isSuccessful) {
                 mutableLiveData.value = null
@@ -52,5 +45,33 @@ class FireBaseManager() {
                     mutableLiveData.value = it.exception
                 }
             }
+    }
+
+    fun loadFireBaseContacts() {
+        Log.i("Checking", " He said")
+        ContactRepository.getFireBaseList().clear()
+        dbContacts.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                var data: UserContact
+                if (dataSnapshot.exists() != false) {
+                    for (snapShot in dataSnapshot.children) {
+                        data = snapShot.getValue(UserContact::class.java)!!
+                        data.apply {
+                            if (source.equals(""))source = "F"
+                        }
+                        ContactRepository.getFireBaseList().add(data)
+                        Log.i("Checking", "${ContactRepository.getFireBaseList()}")
+
+                    }
+
+
+                }
+                AppFragment.getRecyclerView().adapter!!.notifyDataSetChanged()
+            }
+
+            override fun onCancelled(errorObject: DatabaseError) {
+                Log.w(TAG, "loadPost:onCancelled", errorObject.toException())
+            }
+        })
     }
 }
